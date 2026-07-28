@@ -19,14 +19,10 @@ app.get("/followers", async (req, res) => {
       waitUntil: "networkidle2"
     });
 
-    // 🔥 Supprimer l'overlay de connexion Instagram
+    // 🔥 Supprimer le div qui bloque la page (scrollview)
     await page.evaluate(() => {
-      const all = document.querySelectorAll('*');
-      all.forEach(el => {
-        if (getComputedStyle(el).position === 'fixed') {
-          el.remove();
-        }
-      });
+      const blocker = document.getElementById("scrollview");
+      if (blocker) blocker.remove();
     });
 
     // 🔥 Scraper le nombre de followers (ton HTML réel)
