@@ -1,5 +1,5 @@
 import express from "express";
-import puppeteer from "puppeteer";
+import { webkit } from "@playwright/test";
 
 const app = express();
 
@@ -8,34 +8,20 @@ app.get("/followers", async (req, res) => {
     if (!user) return res.json({ error: "Missing ?user=" });
 
     try {
-        const browser = await puppeteer.launch({
-            headless: "new",
-            args: [
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--single-process",
-                "--no-zygote"
-            ],
-            executablePath: puppeteer.executablePath()
-        });
-
+        const browser = await webkit.launch();
         const page = await browser.newPage();
+
         await page.goto(`https://www.instagram.com/${user}/`, {
-            waitUntil: "networkidle2"
+            waitUntil: "networkidle"
         });
 
-        const followers = await page.evaluate(() => {
-            const el = document.querySelector('a[href$="/followers/"] span');
-            if (!el) return null;
-            return el.innerText.replace(/\D/g, "");
-        });
+        const followers = await page.locator('a[href$="/followers/"] span').innerText().catch(() => null);
 
         await browser.close();
 
         if (!followers) return res.json({ error: "Followers not found" });
 
-        res.json({ user, followers: parseInt(followers) });
+        res.json({ user, followers: parseInt(followers.replace(/\D/g, "")) });
 
     } catch (err) {
         res.json({ error: err.message });
