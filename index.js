@@ -19,19 +19,26 @@ app.get("/followers", async (req, res) => {
       waitUntil: "networkidle2"
     });
 
-    // Sélecteur basé sur TON HTML réel
+    // 🔥 Supprimer l'overlay de connexion Instagram
+    await page.evaluate(() => {
+      const all = document.querySelectorAll('*');
+      all.forEach(el => {
+        if (getComputedStyle(el).position === 'fixed') {
+          el.remove();
+        }
+      });
+    });
+
+    // 🔥 Scraper le nombre de followers (ton HTML réel)
     const followers = await page.evaluate(() => {
-  // On récupère le span qui contient l'attribut title="2098"
-  const el = document.querySelector('a span[title]');
-  if (!el) return null;
+      const el = document.querySelector('a span[title]');
+      if (!el) return null;
 
-  const raw = el.getAttribute("title");
-  if (!raw) return null;
+      const raw = el.getAttribute("title");
+      if (!raw) return null;
 
-  // Nettoyage : enlever les espaces, caractères spéciaux
-  return parseInt(raw.replace(/\D/g, ""));
-});
-
+      return parseInt(raw.replace(/\D/g, ""));
+    });
 
     await browser.close();
 
