@@ -15,7 +15,7 @@ app.get("/followers", async (req, res) => {
 
     const page = await browser.newPage();
 
-    await page.goto("https://www.instagram.com/demattos.be/", {
+    await page.goto("https://www.instagram.com/demattos.art/", {
       waitUntil: "networkidle2"
     });
 
