@@ -4,7 +4,7 @@ import puppeteer from "puppeteer-core";
 const app = express();
 
 /* ============================================================
-   FONCTION : Injecter la session Instagram (cookie Railway) -login insta
+   FONCTION : Injecter la session Instagram (cookie Railway) -kakakaka
    ============================================================ */
 async function injectInstagramSession(page) {
   await page.setCookie({
@@ -18,11 +18,53 @@ async function injectInstagramSession(page) {
    ENDPOINT DE TEST
    ============================================================ */
 app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "Instagram Scraper + Login Test v4.0" });
+  res.json({ status: "ok", message: "Instagram Scraper + Login Test v5.0" });
 });
 
 /* ============================================================
-   LOGIN TEST (avec identifiants Railway)
+   TEST : Vérifier si Puppeteer voit les champs email/pass
+   ============================================================ */
+app.get("/login-field-test", async (req, res) => {
+  try {
+    const browser = await puppeteer.connect({
+      browserWSEndpoint:
+        "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d",
+    });
+
+    const page = await browser.newPage();
+
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    );
+
+    await page.goto("https://www.instagram.com/accounts/login/", {
+      waitUntil: "networkidle2",
+    });
+
+    await new Promise(r => setTimeout(r, 2000));
+
+    const result = await page.evaluate(() => {
+      const emailField = document.querySelector("input[name='email']");
+      const passField = document.querySelector("input[name='pass']");
+      const pageText = document.body.innerText.slice(0, 300);
+
+      return {
+        emailField: !!emailField,
+        passField: !!passField,
+        pageText
+      };
+    });
+
+    await browser.close();
+    res.json(result);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ============================================================
+   LOGIN TEST (si les champs existent)
    ============================================================ */
 app.get("/login-test", async (req, res) => {
   try {
@@ -41,10 +83,22 @@ app.get("/login-test", async (req, res) => {
       waitUntil: "networkidle2",
     });
 
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 2000));
 
-    await page.type("input[name='username']", process.env.INSTAGRAM_USER, { delay: 80 });
-    await page.type("input[name='password']", process.env.INSTAGRAM_PASS, { delay: 80 });
+    const fields = await page.evaluate(() => {
+      return {
+        emailField: !!document.querySelector("input[name='email']"),
+        passField: !!document.querySelector("input[name='pass']")
+      };
+    });
+
+    if (!fields.emailField || !fields.passField) {
+      await browser.close();
+      return res.json({ status: "blocked_or_hidden_fields" });
+    }
+
+    await page.type("input[name='email']", process.env.INSTAGRAM_USER, { delay: 80 });
+    await page.type("input[name='pass']", process.env.INSTAGRAM_PASS, { delay: 80 });
 
     await page.click("button[type='submit']");
 
@@ -53,19 +107,19 @@ app.get("/login-test", async (req, res) => {
     const result = await page.evaluate(() => {
       const bodyText = document.body.innerText.toLowerCase();
 
-      if (bodyText.includes("sms") || bodyText.includes("code") || bodyText.includes("security code")) {
+      if (bodyText.includes("sms") || bodyText.includes("code")) {
         return { status: "sms_required" };
       }
 
-      if (bodyText.includes("suspicious") || bodyText.includes("unusual login")) {
+      if (bodyText.includes("suspicious") || bodyText.includes("unusual")) {
         return { status: "blocked" };
       }
 
-      if (bodyText.includes("incorrect password") || bodyText.includes("wrong password")) {
+      if (bodyText.includes("incorrect") || bodyText.includes("wrong")) {
         return { status: "bad_credentials" };
       }
 
-      const homeNav = document.querySelector("nav") || document.querySelector("a[href='/accounts/edit/']");
+      const homeNav = document.querySelector("nav");
       if (homeNav) {
         return { status: "ok" };
       }
@@ -105,15 +159,8 @@ app.get("/slogan", async (req, res) => {
 
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    await page.waitForSelector(
-      "span._ap3a._aaco._aacu._aacx._aad7._aade",
-      { timeout: 8000 }
-    );
-
     const slogan = await page.evaluate(() => {
-      const el = document.querySelector(
-        "span._ap3a._aaco._aacu._aacx._aad7._aade"
-      );
+      const el = document.querySelector("header section span:nth-of-type(1)");
       return el ? el.innerText.trim() : null;
     });
 
@@ -242,5 +289,5 @@ app.get("/full-profile", async (req, res) => {
    LANCEMENT DU SERVEUR
    ============================================================ */
 app.listen(3000, () => {
-  console.log("Instagram Scraper + Login Test v4.0 — Running on port 3000");
+  console.log("Instagram Scraper + Login Test v5.0 — Running on port 3000");
 });
