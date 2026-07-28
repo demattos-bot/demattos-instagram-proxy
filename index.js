@@ -1,4 +1,4 @@
-  // avec login
+// avec login
 
 import express from "express";
 import puppeteer from "puppeteer-core";
@@ -96,15 +96,9 @@ app.get("/profile", async (req, res) => {
       statsSpans.forEach(el => {
         const t = el.innerText.trim().toLowerCase();
 
-        if (t.includes("posts")) {
-          postsCount = parseInt(t.replace(/\D/g, ""));
-        }
-        if (t.includes("followers")) {
-          followers = parseInt(t.replace(/\D/g, ""));
-        }
-        if (t.includes("following")) {
-          following = parseInt(t.replace(/\D/g, ""));
-        }
+        if (t.includes("posts")) postsCount = parseInt(t.replace(/\D/g, ""));
+        if (t.includes("followers")) followers = parseInt(t.replace(/\D/g, ""));
+        if (t.includes("following")) following = parseInt(t.replace(/\D/g, ""));
       });
 
       // Profile picture
@@ -139,6 +133,7 @@ app.get("/profile", async (req, res) => {
 });
 
 
+// -------------------- LOGIN FIXÉ --------------------
 
 app.get("/login", async (req, res) => {
   try {
@@ -161,7 +156,7 @@ app.get("/login", async (req, res) => {
     // Champ mot de passe
     await page.type("input[name='pass']", process.env.IG_LOGIN_PASSWORD, { delay: 80 });
 
-    // --- Bouton login : Instagram DOM 2026 ---
+    // Bouton login — DOM Instagram 2026
     const loginSelectors = [
       "button:has-text('Se connecter')",
       "button:has-text('Log in')",
@@ -185,10 +180,8 @@ app.get("/login", async (req, res) => {
       throw new Error("Instagram a caché le bouton login (anti-bot).");
     }
 
-    // Attendre la réaction d’Instagram
     await wait(6000);
 
-    // Récupérer les cookies après tentative
     const cookies = await page.cookies();
 
     await browser.close();
@@ -197,14 +190,6 @@ app.get("/login", async (req, res) => {
       status: "Login attempted",
       cookies
     });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-    
 
   } catch (err) {
     res.status(500).json({ error: err.message });
