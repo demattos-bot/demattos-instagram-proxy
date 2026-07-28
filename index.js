@@ -9,12 +9,13 @@ app.get("/", (req, res) => {
 });
 
 // =========================
-// SCRAPER DU SLOGAN
+// SCRAPER DU SLOGAN LE BON
 // =========================
 app.get("/slogan", async (req, res) => {
   try {
     const browser = await puppeteer.connect({
-      browserWSEndpoint: "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d"
+      browserWSEndpoint:
+        "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d",
     });
 
     const page = await browser.newPage();
@@ -24,23 +25,25 @@ app.get("/slogan", async (req, res) => {
     );
 
     await page.goto("https://www.instagram.com/demattos.art/", {
-      waitUntil: "networkidle2"
+      waitUntil: "networkidle2",
     });
 
-    // 🔥 Simuler un clic extérieur pour fermer la fenêtre login
-    await page.mouse.click(10, 10);
+    // 🔥 Clic juste au-dessus de la barre de défilement (zone non couverte)
+    await page.mouse.click(300, 750);
 
-    // 🔥 Pause compatible Browserless
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // 🔥 Pause universelle compatible Browserless
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
-    // 🔥 Attendre que le slogan soit visible
-    await page.waitForSelector('span._ap3a._aaco._aacu._aacx._aad7._aade', {
-      timeout: 5000
-    });
+    // 🔥 Attendre que le slogan apparaisse
+    await page.waitForSelector(
+      "span._ap3a._aaco._aacu._aacx._aad7._aade",
+      { timeout: 8000 }
+    );
 
-    // 🔥 Scraper ton slogan
     const slogan = await page.evaluate(() => {
-      const el = document.querySelector('span._ap3a._aaco._aacu._aacx._aad7._aade');
+      const el = document.querySelector(
+        "span._ap3a._aaco._aacu._aacx._aad7._aade"
+      );
       return el ? el.innerText.trim() : null;
     });
 
@@ -58,7 +61,8 @@ app.get("/slogan", async (req, res) => {
 app.get("/followers", async (req, res) => {
   try {
     const browser = await puppeteer.connect({
-      browserWSEndpoint: "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d"
+      browserWSEndpoint:
+        "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d",
     });
 
     const page = await browser.newPage();
@@ -68,18 +72,17 @@ app.get("/followers", async (req, res) => {
     );
 
     await page.goto("https://www.instagram.com/demattos.art/", {
-      waitUntil: "networkidle2"
+      waitUntil: "networkidle2",
     });
 
-    // 🔥 Simuler un clic extérieur pour fermer la fenêtre login
-    await page.mouse.click(10, 10);
+    // 🔥 Clic juste au-dessus de la barre de défilement
+    await page.mouse.click(300, 750);
 
-    // 🔥 Pause compatible Browserless
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     // 🔥 Scraper les followers
     const followers = await page.evaluate(() => {
-      const el = document.querySelector('a span[title]');
+      const el = document.querySelector("a span[title]");
       if (!el) return null;
 
       const raw = el.getAttribute("title");
