@@ -1,4 +1,4 @@
- // Bombaaaa
+// Bombaaaa
 
 import express from "express";
 import puppeteer from "puppeteer-core";
@@ -15,7 +15,7 @@ async function newPage() {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
   );
 
-  // Inject ALL cookies
+  // Inject ALL cookies using EXACT Railway variable names
   const cookies = [
     { name: "csrftoken", value: process.env.IG_CSRFTOKEN, domain: ".instagram.com" },
     { name: "datr", value: process.env.datr, domain: ".instagram.com" },
