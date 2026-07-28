@@ -1,3 +1,19 @@
+import express from "express";
+import puppeteer from "puppeteer-core";
+
+const app = express();
+
+/* ============================================================
+   FONCTION : Injecter la session Instagram 1.0
+   ============================================================ */
+async function injectInstagramSession(page) {
+  await page.setCookie({
+    name: "sessionid",
+    value: process.env.INSTAGRAM_SESSIONID,
+    domain: ".instagram.com"
+  });
+}
+
 /* ============================================================
    SCRAPER FULL PROFILE Beta 3.0
    ============================================================ */
@@ -15,11 +31,7 @@ app.get("/full-profile", async (req, res) => {
     );
 
     // 🔥 Injecter la session Instagram
-    await page.setCookie({
-      name: "sessionid",
-      value: process.env.INSTAGRAM_SESSIONID,
-      domain: ".instagram.com"
-    });
+    await injectInstagramSession(page);
 
     await page.goto("https://www.instagram.com/demattos.art/", {
       waitUntil: "networkidle2",
@@ -90,4 +102,11 @@ app.get("/full-profile", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+/* ============================================================
+   LANCEMENT DU SERVEUR
+   ============================================================ */
+app.listen(3000, () => {
+  console.log("Instagram Scraper Beta 3.0 — Running on port 3000");
 });
