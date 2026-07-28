@@ -3,16 +3,22 @@ import puppeteer from "puppeteer-core";
 
 const app = express();
 
-// Endpoint de test
+/* ============================================================
+   ENDPOINT DE TEST
+   Permet de vérifier que Railway + Express fonctionnent
+   ============================================================ */
 app.get("/", (req, res) => {
   res.json({ status: "ok", message: "Serveur Express fonctionne sur Railway" });
 });
 
-// =========================
-// SCRAPER DU SLOGAN LE BON
-// =========================
+/* ============================================================
+   SCRAPER DU SLOGAN INSTAGRAM - KULAAAA
+   ============================================================ */
 app.get("/slogan", async (req, res) => {
   try {
+    /* ------------------------------------------------------------
+       1) Connexion à Browserless (Chrome dans le cloud)
+       ------------------------------------------------------------ */
     const browser = await puppeteer.connect({
       browserWSEndpoint:
         "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d",
@@ -20,26 +26,52 @@ app.get("/slogan", async (req, res) => {
 
     const page = await browser.newPage();
 
+    /* ------------------------------------------------------------
+       2) Définir une vraie taille d'écran
+          IMPORTANT : Browserless utilise 800x600 par défaut,
+          ce qui fait que ton clic tombe DANS l’overlay.
+          On force 1920x1080 pour reproduire ton navigateur.
+       ------------------------------------------------------------ */
+    await page.setViewport({ width: 1920, height: 1080 });
+
+    /* ------------------------------------------------------------
+       3) User-Agent moderne pour éviter la version "light"
+       ------------------------------------------------------------ */
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     );
 
+    /* ------------------------------------------------------------
+       4) Charger la page Instagram
+       ------------------------------------------------------------ */
     await page.goto("https://www.instagram.com/demattos.art/", {
       waitUntil: "networkidle2",
     });
 
-    // 🔥 Clic juste au-dessus de la barre de défilement (zone non couverte)
-    await page.mouse.click(300, 750);
+    /* ------------------------------------------------------------
+       5) Clic dans la zone BASSE de l'écran
+          C’est la SEULE zone non recouverte par l’overlay login.
+          (Tu l’as remarqué toi-même : proche de la barre de défilement)
+       ------------------------------------------------------------ */
+    await page.mouse.click(500, 1000);
 
-    // 🔥 Pause universelle compatible Browserless
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    /* ------------------------------------------------------------
+       6) Pause universelle (compatible toutes versions Puppeteer)
+       ------------------------------------------------------------ */
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
-    // 🔥 Attendre que le slogan apparaisse
+    /* ------------------------------------------------------------
+       7) Attendre que le slogan apparaisse dans le DOM
+          (Maintenant que l’overlay est fermé)
+       ------------------------------------------------------------ */
     await page.waitForSelector(
       "span._ap3a._aaco._aacu._aacx._aad7._aade",
       { timeout: 8000 }
     );
 
+    /* ------------------------------------------------------------
+       8) Extraction du slogan
+       ------------------------------------------------------------ */
     const slogan = await page.evaluate(() => {
       const el = document.querySelector(
         "span._ap3a._aaco._aacu._aacx._aad7._aade"
@@ -55,9 +87,9 @@ app.get("/slogan", async (req, res) => {
   }
 });
 
-// =========================
-// SCRAPER DES FOLLOWERS
-// =========================
+/* ============================================================
+   SCRAPER DU NOMBRE DE FOLLOWERS
+   ============================================================ */
 app.get("/followers", async (req, res) => {
   try {
     const browser = await puppeteer.connect({
@@ -67,6 +99,8 @@ app.get("/followers", async (req, res) => {
 
     const page = await browser.newPage();
 
+    await page.setViewport({ width: 1920, height: 1080 });
+
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     );
@@ -75,12 +109,15 @@ app.get("/followers", async (req, res) => {
       waitUntil: "networkidle2",
     });
 
-    // 🔥 Clic juste au-dessus de la barre de défilement
-    await page.mouse.click(300, 750);
+    /* ------------------------------------------------------------
+       Même clic que pour le slogan : on ferme l’overlay
+       ------------------------------------------------------------ */
+    await page.mouse.click(500, 1000);
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    // 🔥 Scraper les followers
+    /* ------------------------------------------------------------
+       Extraction du nombre de followers
+       ------------------------------------------------------------ */
     const followers = await page.evaluate(() => {
       const el = document.querySelector("a span[title]");
       if (!el) return null;
@@ -99,4 +136,7 @@ app.get("/followers", async (req, res) => {
   }
 });
 
+/* ============================================================
+   LANCEMENT DU SERVEUR EXPRESS
+   ============================================================ */
 app.listen(3000, () => console.log("Serveur Express OK sur Railway"));
