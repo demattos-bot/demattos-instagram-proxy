@@ -1,7 +1,3 @@
-/* ============================================================
-   SCRAPER — Slogan (DOM complet grâce au cookie)
-   ============================================================ */
-
 import express from "express";
 import puppeteer from "puppeteer-core";
 
@@ -17,7 +13,7 @@ async function newPage() {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
   );
 
-  // 🔥 IMPORTANT : on remet le cookie sessionid
+  // Inject session cookie
   await page.setCookie({
     name: "sessionid",
     value: process.env.INSTAGRAM_SESSIONID,
@@ -27,50 +23,6 @@ async function newPage() {
   return { browser, page };
 }
 
-app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "Instagram Scraper — Session Enabled" });
-});
-
-/* ============================================================
-   SCRAPER — Slogan (DOM complet grâce au cookie)
-   ============================================================ */
-app.get("/slogan", async (req, res) => {
-  try {
-    const username = req.query.user || "demattos.art";
-
-    const { browser, page } = await newPage();
-
-    await page.goto(`https://www.instagram.com/${username}/`, {
-      waitUntil: "networkidle2",
-    });
-
-    await new Promise(r => setTimeout(r, 1200));
-
-    const slogan = await page.evaluate(() => {
-      const header = document.querySelector("header section");
-      if (!header) return null;
-
-      const spans = [...header.querySelectorAll("span")];
-
-      const candidate = spans.find(el => {
-        const t = el.innerText.trim();
-        return t.length > 0 && t.length < 80;
-      });
-
-      return candidate ? candidate.innerText.trim() : null;
-    });
-
-    await browser.close();
-    res.json({ slogan });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/* ============================================================
-   SCRAPER — Profil complet
-   ============================================================ */
 app.get("/profile", async (req, res) => {
   try {
     const username = req.query.user || "demattos.art";
@@ -83,6 +35,10 @@ app.get("/profile", async (req, res) => {
 
     await new Promise(r => setTimeout(r, 1500));
 
+    // Scroll to load posts
+    await page.evaluate(() => window.scrollBy(0, 800));
+    await new Promise(r => setTimeout(r, 1200));
+
     const data = await page.evaluate(() => {
       const getText = (sel) => {
         const el = document.querySelector(sel);
@@ -94,6 +50,7 @@ app.get("/profile", async (req, res) => {
         return el ? el.getAttribute(attr) : null;
       };
 
+      // Slogan
       const header = document.querySelector("header section");
       let slogan = null;
 
@@ -106,25 +63,36 @@ app.get("/profile", async (req, res) => {
         slogan = candidate ? candidate.innerText.trim() : null;
       }
 
+      // Bio
       const bio =
         getText("header section h1") ||
         getText("header section div") ||
         null;
 
+      // External link
       const link = getAttr("header section a[href^='http']", "href");
 
-      const stats = [...document.querySelectorAll("header li span")].map(el =>
-        el.innerText.replace(/\D/g, "")
+      // Stats (new Instagram DOM)
+      const statsRaw = [...document.querySelectorAll("header ul li")].map(el =>
+        el.innerText.trim()
       );
 
-      const postsCount = stats[0] ? parseInt(stats[0]) : null;
-      const followers = stats[1] ? parseInt(stats[1]) : null;
-      const following = stats[2] ? parseInt(stats[2]) : null;
+      let postsCount = null;
+      let followers = null;
+      let following = null;
 
+      statsRaw.forEach(text => {
+        if (text.includes("posts")) postsCount = parseInt(text);
+        if (text.includes("followers")) followers = parseInt(text);
+        if (text.includes("following")) following = parseInt(text);
+      });
+
+      // Profile picture
       const profilePicture = getAttr("header img", "src");
 
+      // Latest posts
       const posts = [...document.querySelectorAll("article img")]
-        .slice(0, 9)
+        .slice(0, 12)
         .map(img => ({
           image: img.src,
           alt: img.alt || null
@@ -150,9 +118,6 @@ app.get("/profile", async (req, res) => {
   }
 });
 
-/* ============================================================
-   LANCEMENT SERVEUR
-   ============================================================ */
 app.listen(3000, () => {
-  console.log("Instagram Scraper — Session Enabled — Running on port 3000");
+  console.log("Instagram Scraper v4 — Session Enabled — Running on port 3000");
 });
