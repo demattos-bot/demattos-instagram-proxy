@@ -285,6 +285,60 @@ app.get("/full-profile", async (req, res) => {
   }
 });
 
+app.get("/login-button-analysis", async (req, res) => {
+  try {
+    const browser = await puppeteer.connect({
+      browserWSEndpoint:
+        "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d",
+    });
+
+    const page = await browser.newPage();
+
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    );
+
+    await page.goto("https://www.instagram.com/accounts/login/", {
+      waitUntil: "networkidle2",
+    });
+
+    await new Promise(r => setTimeout(r, 2000));
+
+    const analysis = await page.evaluate(() => {
+      const allSpans = [...document.querySelectorAll("span")].map(el => ({
+        text: el.innerText.trim(),
+        classes: el.className,
+        role: el.getAttribute("role"),
+        parentClasses: el.parentElement?.className || null,
+        parentRole: el.parentElement?.getAttribute("role") || null
+      }));
+
+      const loginSpans = allSpans.filter(s => s.text === "Se connecter");
+
+      const allDivs = [...document.querySelectorAll("div")].map(el => ({
+        classes: el.className,
+        role: el.getAttribute("role"),
+        text: el.innerText.trim().slice(0, 100)
+      }));
+
+      return {
+        loginSpans,
+        allSpansCount: allSpans.length,
+        allDivsCount: allDivs.length,
+        sampleDivs: allDivs.slice(0, 20),
+        sampleSpans: allSpans.slice(0, 20)
+      };
+    });
+
+    await browser.close();
+    res.json(analysis);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 /* ============================================================
    LANCEMENT DU SERVEUR
    ============================================================ */
