@@ -11,7 +11,6 @@ app.get("/followers", async (req, res) => {
   try {
     const browser = await puppeteer.connect({
       browserWSEndpoint: "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d"
-
     });
 
     const page = await browser.newPage();
@@ -20,9 +19,25 @@ app.get("/followers", async (req, res) => {
       waitUntil: "networkidle2"
     });
 
+    // Extraction stable via JSON ld+json
     const followers = await page.evaluate(() => {
-      const el = document.querySelector('a[href$="/followers/"] span');
-      return el ? el.innerText : null;
+      const script = document.querySelector('script[type="application/ld+json"]');
+      if (!script) return null;
+
+      try {
+        const data = JSON.parse(script.innerText);
+
+        if (
+          data.interactionStatistic &&
+          data.interactionStatistic.userInteractionCount
+        ) {
+          return data.interactionStatistic.userInteractionCount;
+        }
+
+        return null;
+      } catch (e) {
+        return null;
+      }
     });
 
     await browser.close();
