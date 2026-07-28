@@ -19,11 +19,8 @@ app.get("/followers", async (req, res) => {
       waitUntil: "networkidle2"
     });
 
-    // 🔥 Supprimer le div qui bloque la page (scrollview)
-    await page.evaluate(() => {
-      const blocker = document.getElementById("scrollview");
-      if (blocker) blocker.remove();
-    });
+    // 🔥 Simuler un clic dans la zone extérieure pour fermer la fenêtre login
+    await page.mouse.click(10, 10);
 
     // 🔥 Scraper le nombre de followers (ton HTML réel)
     const followers = await page.evaluate(() => {
