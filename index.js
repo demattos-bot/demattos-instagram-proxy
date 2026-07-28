@@ -19,14 +19,16 @@ app.get("/followers", async (req, res) => {
       waitUntil: "networkidle2"
     });
 
-    // Nouveau sélecteur Instagram 2026
+    // Sélecteur basé sur TON HTML réel
     const followers = await page.evaluate(() => {
-      const el = document.querySelector('span[title][class*="x1lliihq"]');
+      // On cherche le span qui contient l'attribut title="2098"
+      const el = document.querySelector('a span[title]');
       if (!el) return null;
 
       const raw = el.getAttribute("title");
       if (!raw) return null;
 
+      // Nettoyage : enlever les espaces, caractères spéciaux
       return parseInt(raw.replace(/\D/g, ""));
     });
 
