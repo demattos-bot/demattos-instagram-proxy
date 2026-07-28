@@ -1,7 +1,9 @@
 import express from "express";
 import puppeteer from "puppeteer-core";
+import cors from "cors";   // ← AJOUT
 
 const app = express();
+app.use(cors());           // ← AJOUT
 
 const BROWSERLESS = "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d";
 
@@ -17,7 +19,6 @@ async function newPage() {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
   );
 
-  // Inject ALL cookies using EXACT Railway variable names
   const cookies = [
     { name: "csrftoken", value: process.env.IG_CSRFTOKEN, domain: ".instagram.com" },
     { name: "datr", value: process.env.datr, domain: ".instagram.com" },
@@ -49,7 +50,6 @@ app.get("/profile", async (req, res) => {
 
     await wait(2000 + Math.random() * 1500);
 
-    // Scroll to load posts
     await page.evaluate(() => window.scrollBy(0, 1200));
     await wait(1500 + Math.random() * 1000);
 
@@ -64,7 +64,6 @@ app.get("/profile", async (req, res) => {
         return el ? el.getAttribute(attr) : null;
       };
 
-      // Slogan (fallback intelligent)
       let slogan = null;
       const header = document.querySelector("header section");
       if (header) {
@@ -76,16 +75,13 @@ app.get("/profile", async (req, res) => {
         slogan = candidate ? candidate.innerText.trim() : null;
       }
 
-      // Bio
       const bio =
         getText("header section h1") ||
         getText("header section div") ||
         null;
 
-      // External link
       const link = getAttr("header section a[href^='http']", "href");
 
-      // Stats — DOM 2026
       let postsCount = null;
       let followers = null;
       let following = null;
@@ -94,21 +90,13 @@ app.get("/profile", async (req, res) => {
       statsSpans.forEach(el => {
         const t = el.innerText.trim().toLowerCase();
 
-        if (t.includes("posts")) {
-          postsCount = parseInt(t.replace(/\D/g, ""));
-        }
-        if (t.includes("followers")) {
-          followers = parseInt(t.replace(/\D/g, ""));
-        }
-        if (t.includes("following")) {
-          following = parseInt(t.replace(/\D/g, ""));
-        }
+        if (t.includes("posts")) postsCount = parseInt(t.replace(/\D/g, ""));
+        if (t.includes("followers")) followers = parseInt(t.replace(/\D/g, ""));
+        if (t.includes("following")) following = parseInt(t.replace(/\D/g, ""));
       });
 
-      // Profile picture
       const profilePicture = getAttr("header img", "src");
 
-      // Latest posts — DOM 2026
       const posts = [...document.querySelectorAll("article a img, article div img")]
         .slice(0, 12)
         .map(img => ({
