@@ -1,3 +1,5 @@
+  // avec login
+
 import express from "express";
 import puppeteer from "puppeteer-core";
 
@@ -135,6 +137,49 @@ app.get("/profile", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.get("/login", async (req, res) => {
+  try {
+    const browser = await puppeteer.connect({ browserWSEndpoint: BROWSERLESS });
+    const page = await browser.newPage();
+
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    );
+
+    await page.goto("https://www.instagram.com/accounts/login/", {
+      waitUntil: "networkidle2",
+    });
+
+    await wait(3000);
+
+    // Champ email / username
+    await page.type("input[name='email']", process.env.IG_LOGIN_EMAIL, { delay: 80 });
+
+    // Champ mot de passe (celui que tu as trouvé)
+    await page.type("input[name='pass']", process.env.IG_LOGIN_PASSWORD, { delay: 80 });
+
+    // Bouton login
+    await page.click("button[type='submit']");
+
+    // Attendre la réaction d’Instagram
+    await wait(6000);
+
+    // Récupérer les cookies après tentative
+    const cookies = await page.cookies();
+
+    await browser.close();
+
+    res.json({
+      status: "Login attempted",
+      cookies
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 app.listen(3000, () => {
   console.log("Instagram Scraper v6 — DOM 2026 — Running on port 3000");
