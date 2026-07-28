@@ -138,6 +138,8 @@ app.get("/profile", async (req, res) => {
   }
 });
 
+
+
 app.get("/login", async (req, res) => {
   try {
     const browser = await puppeteer.connect({ browserWSEndpoint: BROWSERLESS });
@@ -156,11 +158,32 @@ app.get("/login", async (req, res) => {
     // Champ email / username
     await page.type("input[name='email']", process.env.IG_LOGIN_EMAIL, { delay: 80 });
 
-    // Champ mot de passe (celui que tu as trouvé)
+    // Champ mot de passe
     await page.type("input[name='pass']", process.env.IG_LOGIN_PASSWORD, { delay: 80 });
 
-    // Bouton login
-    await page.click("button[type='submit']");
+    // --- Bouton login : Instagram DOM 2026 ---
+    const loginSelectors = [
+      "button:has-text('Se connecter')",
+      "button:has-text('Log in')",
+      "form button",
+      "button.xjbqb8w",
+      "div[role='button']"
+    ];
+
+    let clicked = false;
+
+    for (const sel of loginSelectors) {
+      const exists = await page.$(sel);
+      if (exists) {
+        await page.click(sel);
+        clicked = true;
+        break;
+      }
+    }
+
+    if (!clicked) {
+      throw new Error("Instagram a caché le bouton login (anti-bot).");
+    }
 
     // Attendre la réaction d’Instagram
     await wait(6000);
@@ -174,6 +197,14 @@ app.get("/login", async (req, res) => {
       status: "Login attempted",
       cookies
     });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+    
 
   } catch (err) {
     res.status(500).json({ error: err.message });
