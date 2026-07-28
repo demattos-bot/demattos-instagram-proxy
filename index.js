@@ -70,6 +70,8 @@ app.get("/slogan", async (req, res) => {
    ============================================================ */
 app.get("/followers", async (req, res) => {
   try {
+    console.log("➡️ /followers appelé !");
+
     const browser = await puppeteer.connect({
       browserWSEndpoint:
         "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d"
@@ -87,13 +89,12 @@ app.get("/followers", async (req, res) => {
       waitUntil: "networkidle2"
     });
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     const followers = await page.evaluate(() => {
-      const el = document.querySelector("a span[title]");
+      const el = document.querySelector("header li:nth-child(2) span");
       if (!el) return null;
-      const raw = el.getAttribute("title");
-      return raw ? parseInt(raw.replace(/\D/g, "")) : null;
+      return parseInt(el.innerText.replace(/\D/g, ""));
     });
 
     await browser.close();
@@ -103,6 +104,7 @@ app.get("/followers", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 /* ============================================================
    SCRAPER FULL PROFILE
