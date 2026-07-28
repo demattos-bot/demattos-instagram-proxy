@@ -21,16 +21,17 @@ app.get("/followers", async (req, res) => {
 
     // Sélecteur basé sur TON HTML réel
     const followers = await page.evaluate(() => {
-      // On cherche le span qui contient l'attribut title="2098"
-      const el = document.querySelector('a span[title]');
-      if (!el) return null;
+  // On récupère le span qui contient l'attribut title="2098"
+  const el = document.querySelector('a span[title]');
+  if (!el) return null;
 
-      const raw = el.getAttribute("title");
-      if (!raw) return null;
+  const raw = el.getAttribute("title");
+  if (!raw) return null;
 
-      // Nettoyage : enlever les espaces, caractères spéciaux
-      return parseInt(raw.replace(/\D/g, ""));
-    });
+  // Nettoyage : enlever les espaces, caractères spéciaux
+  return parseInt(raw.replace(/\D/g, ""));
+});
+
 
     await browser.close();
 
