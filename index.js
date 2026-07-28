@@ -1,12 +1,3 @@
-import express from "express";
-import puppeteer from "puppeteer-core";
-
-const app = express();
-
-app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "Express fonctionne sur Railway" });
-});
-
 app.get("/followers", async (req, res) => {
   try {
     const browser = await puppeteer.connect({
@@ -19,25 +10,18 @@ app.get("/followers", async (req, res) => {
       waitUntil: "networkidle2"
     });
 
-    // Extraction stable via JSON ld+json
+    // Nouveau sélecteur Instagram 2026
     const followers = await page.evaluate(() => {
-      const script = document.querySelector('script[type="application/ld+json"]');
-      if (!script) return null;
+      const el = document.querySelector('span[title][class*="x1lliihq"]');
+      if (!el) return null;
 
-      try {
-        const data = JSON.parse(script.innerText);
+      // Le nombre est dans l'attribut title
+      const raw = el.getAttribute("title");
 
-        if (
-          data.interactionStatistic &&
-          data.interactionStatistic.userInteractionCount
-        ) {
-          return data.interactionStatistic.userInteractionCount;
-        }
+      if (!raw) return null;
 
-        return null;
-      } catch (e) {
-        return null;
-      }
+      // Nettoyage : enlever les espaces, les caractères spéciaux
+      return parseInt(raw.replace(/\D/g, ""));
     });
 
     await browser.close();
@@ -47,5 +31,3 @@ app.get("/followers", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-app.listen(3000, () => console.log("Serveur Express OK sur Railway"));
