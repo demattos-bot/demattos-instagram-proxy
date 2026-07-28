@@ -10,7 +10,14 @@ app.get("/followers", async (req, res) => {
     try {
         const browser = await puppeteer.launch({
             headless: "new",
-            args: ["--no-sandbox", "--disable-setuid-sandbox"]
+            args: [
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--single-process",
+                "--no-zygote"
+            ],
+            executablePath: puppeteer.executablePath()
         });
 
         const page = await browser.newPage();
