@@ -1,5 +1,3 @@
-// avec login
-
 import express from "express";
 import puppeteer from "puppeteer-core";
 
@@ -96,9 +94,15 @@ app.get("/profile", async (req, res) => {
       statsSpans.forEach(el => {
         const t = el.innerText.trim().toLowerCase();
 
-        if (t.includes("posts")) postsCount = parseInt(t.replace(/\D/g, ""));
-        if (t.includes("followers")) followers = parseInt(t.replace(/\D/g, ""));
-        if (t.includes("following")) following = parseInt(t.replace(/\D/g, ""));
+        if (t.includes("posts")) {
+          postsCount = parseInt(t.replace(/\D/g, ""));
+        }
+        if (t.includes("followers")) {
+          followers = parseInt(t.replace(/\D/g, ""));
+        }
+        if (t.includes("following")) {
+          following = parseInt(t.replace(/\D/g, ""));
+        }
       });
 
       // Profile picture
@@ -131,71 +135,6 @@ app.get("/profile", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-
-// -------------------- LOGIN FIXÉ --------------------
-
-app.get("/login", async (req, res) => {
-  try {
-    const browser = await puppeteer.connect({ browserWSEndpoint: BROWSERLESS });
-    const page = await browser.newPage();
-
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    );
-
-    await page.goto("https://www.instagram.com/accounts/login/", {
-      waitUntil: "networkidle2",
-    });
-
-    await wait(3000);
-
-    // Champ email / username
-    await page.type("input[name='email']", process.env.IG_LOGIN_EMAIL, { delay: 80 });
-
-    // Champ mot de passe
-    await page.type("input[name='pass']", process.env.IG_LOGIN_PASSWORD, { delay: 80 });
-
-    // Bouton login — DOM Instagram 2026
-    const loginSelectors = [
-      "button:has-text('Se connecter')",
-      "button:has-text('Log in')",
-      "form button",
-      "button.xjbqb8w",
-      "div[role='button']"
-    ];
-
-    let clicked = false;
-
-    for (const sel of loginSelectors) {
-      const exists = await page.$(sel);
-      if (exists) {
-        await page.click(sel);
-        clicked = true;
-        break;
-      }
-    }
-
-    if (!clicked) {
-      throw new Error("Instagram a caché le bouton login (anti-bot).");
-    }
-
-    await wait(6000);
-
-    const cookies = await page.cookies();
-
-    await browser.close();
-
-    res.json({
-      status: "Login attempted",
-      cookies
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 
 app.listen(3000, () => {
   console.log("Instagram Scraper v6 — DOM 2026 — Running on port 3000");
