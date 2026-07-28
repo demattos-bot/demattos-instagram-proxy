@@ -1,3 +1,5 @@
+ // Bombaaaa
+
 import express from "express";
 import puppeteer from "puppeteer-core";
 
@@ -13,12 +15,22 @@ async function newPage() {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
   );
 
-  // Inject session cookie
-  await page.setCookie({
-    name: "sessionid",
-    value: process.env.INSTAGRAM_SESSIONID,
-    domain: ".instagram.com"
-  });
+  // Inject ALL cookies
+  const cookies = [
+    { name: "csrftoken", value: process.env.IG_CSRFTOKEN, domain: ".instagram.com" },
+    { name: "datr", value: process.env.datr, domain: ".instagram.com" },
+    { name: "dpr", value: process.env.dpr, domain: ".instagram.com" },
+    { name: "ds_user_id", value: process.env.ds_user_id, domain: ".instagram.com" },
+    { name: "ig_did", value: process.env.ig_did, domain: ".instagram.com" },
+    { name: "mid", value: process.env.mid, domain: ".instagram.com" },
+    { name: "ps_l", value: process.env.ps_l, domain: ".instagram.com" },
+    { name: "ps_n", value: process.env.ps_n, domain: ".instagram.com" },
+    { name: "rur", value: process.env.rur, domain: ".instagram.com" },
+    { name: "sessionid", value: process.env.INSTAGRAM_SESSIONID, domain: ".instagram.com" },
+    { name: "wd", value: process.env.wd, domain: ".instagram.com" }
+  ];
+
+  await page.setCookie(...cookies);
 
   return { browser, page };
 }
@@ -72,7 +84,7 @@ app.get("/profile", async (req, res) => {
       // External link
       const link = getAttr("header section a[href^='http']", "href");
 
-      // Stats (new Instagram DOM)
+      // Stats (new DOM)
       const statsRaw = [...document.querySelectorAll("header ul li")].map(el =>
         el.innerText.trim()
       );
@@ -119,5 +131,5 @@ app.get("/profile", async (req, res) => {
 });
 
 app.listen(3000, () => {
-  console.log("Instagram Scraper v4 — Session Enabled — Running on port 3000");
+  console.log("Instagram Scraper v5 — Full Cookies — Running on port 3000");
 });
