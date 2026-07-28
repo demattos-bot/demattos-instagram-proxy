@@ -10,7 +10,8 @@ app.get("/", (req, res) => {
 app.get("/followers", async (req, res) => {
   try {
     const browser = await puppeteer.connect({
-      browserWSEndpoint: "wss://chrome.browserless.io?token=TON_TOKEN_BROWSERLESS_ICI"
+      browserWSEndpoint: "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d"
+
     });
 
     const page = await browser.newPage();
