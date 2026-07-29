@@ -5,6 +5,7 @@ import cors from "cors";
 const app = express();
 app.use(cors());
 
+// --- Fonction qui appelle l'API privée Instagram ---
 async function getInstagramProfile(username) {
   const url = `https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`;
 
@@ -20,7 +21,6 @@ async function getInstagramProfile(username) {
   }
 
   const json = await res.json();
-
   const user = json.data.user;
 
   return {
@@ -44,6 +44,7 @@ async function getInstagramProfile(username) {
   };
 }
 
+// --- Route API ---
 app.get("/profile", async (req, res) => {
   try {
     const username = req.query.user || "demattos.art";
@@ -54,6 +55,7 @@ app.get("/profile", async (req, res) => {
   }
 });
 
+// --- Lancement du serveur ---
 app.listen(3000, () => {
   console.log("Instagram Private API — Running on port 3000");
 });
