@@ -1,129 +1,59 @@
 import express from "express";
-import puppeteer from "puppeteer-core";
-import cors from "cors";   // ← AJOUT
+import fetch from "node-fetch";
+import cors from "cors";
 
 const app = express();
-app.use(cors());           // ← AJOUT
+app.use(cors());
 
-const BROWSERLESS = "wss://chrome.browserless.io?token=2Uy46nBJIUGLz49c47b23ab5164824f7ef7f12f3bb49ef70d";
+async function getInstagramProfile(username) {
+  const url = `https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`;
 
-function wait(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
+  const headers = {
+    "User-Agent": "Instagram 300.0.0.0",
+    "X-IG-App-ID": "936619743392459"
+  };
 
-async function newPage() {
-  const browser = await puppeteer.connect({ browserWSEndpoint: BROWSERLESS });
-  const page = await browser.newPage();
+  const res = await fetch(url, { headers });
 
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-  );
+  if (!res.ok) {
+    throw new Error(`Instagram API error: ${res.status}`);
+  }
 
-  const cookies = [
-    { name: "csrftoken", value: process.env.IG_CSRFTOKEN, domain: ".instagram.com" },
-    { name: "datr", value: process.env.datr, domain: ".instagram.com" },
-    { name: "dpr", value: process.env.dpr, domain: ".instagram.com" },
-    { name: "ds_user_id", value: process.env.ds_user_id, domain: ".instagram.com" },
-    { name: "ig_did", value: process.env.ig_did, domain: ".instagram.com" },
-    { name: "mid", value: process.env.mid, domain: ".instagram.com" },
-    { name: "ps_l", value: process.env.ps_l, domain: ".instagram.com" },
-    { name: "ps_n", value: process.env.ps_n, domain: ".instagram.com" },
-    { name: "rur", value: process.env.rur, domain: ".instagram.com" },
-    { name: "sessionid", value: process.env.INSTAGRAM_SESSIONID, domain: ".instagram.com" },
-    { name: "wd", value: process.env.wd, domain: ".instagram.com" }
-  ];
+  const json = await res.json();
 
-  await page.setCookie(...cookies);
+  const user = json.data.user;
 
-  return { browser, page };
+  return {
+    username: user.username,
+    fullName: user.full_name,
+    bio: user.biography,
+    followers: user.edge_followed_by.count,
+    following: user.edge_follow.count,
+    profilePic: user.profile_pic_url_hd,
+    externalUrl: user.external_url,
+    isPrivate: user.is_private,
+    isVerified: user.is_verified,
+    posts: user.edge_owner_to_timeline_media.edges.map(edge => ({
+      id: edge.node.id,
+      caption: edge.node.edge_media_to_caption.edges[0]?.node.text || null,
+      image: edge.node.display_url,
+      video: edge.node.is_video ? edge.node.video_url : null,
+      comments: edge.node.edge_media_to_comment.count,
+      likes: edge.node.edge_liked_by.count
+    }))
+  };
 }
 
 app.get("/profile", async (req, res) => {
   try {
     const username = req.query.user || "demattos.art";
-
-    const { browser, page } = await newPage();
-
-    await page.goto(`https://www.instagram.com/${username}/`, {
-      waitUntil: "networkidle2",
-    });
-
-    await wait(2000 + Math.random() * 1500);
-
-    await page.evaluate(() => window.scrollBy(0, 1200));
-    await wait(1500 + Math.random() * 1000);
-
-    const data = await page.evaluate(() => {
-      const getText = (sel) => {
-        const el = document.querySelector(sel);
-        return el ? el.innerText.trim() : null;
-      };
-
-      const getAttr = (sel, attr) => {
-        const el = document.querySelector(sel);
-        return el ? el.getAttribute(attr) : null;
-      };
-
-      let slogan = null;
-      const header = document.querySelector("header section");
-      if (header) {
-        const spans = [...header.querySelectorAll("span")];
-        const candidate = spans.find(el => {
-          const t = el.innerText.trim();
-          return t.length > 0 && t.length < 120;
-        });
-        slogan = candidate ? candidate.innerText.trim() : null;
-      }
-
-      const bio =
-        getText("header section h1") ||
-        getText("header section div") ||
-        null;
-
-      const link = getAttr("header section a[href^='http']", "href");
-
-      let postsCount = null;
-      let followers = null;
-      let following = null;
-
-      const statsSpans = [...document.querySelectorAll("header section span")];
-      statsSpans.forEach(el => {
-        const t = el.innerText.trim().toLowerCase();
-
-        if (t.includes("posts")) postsCount = parseInt(t.replace(/\D/g, ""));
-        if (t.includes("followers")) followers = parseInt(t.replace(/\D/g, ""));
-        if (t.includes("following")) following = parseInt(t.replace(/\D/g, ""));
-      });
-
-      const profilePicture = getAttr("header img", "src");
-
-      const posts = [...document.querySelectorAll("article a img, article div img")]
-        .slice(0, 12)
-        .map(img => ({
-          image: img.src,
-          alt: img.alt || null
-        }));
-
-      return {
-        slogan,
-        bio,
-        link,
-        postsCount,
-        followers,
-        following,
-        profilePicture,
-        latestPosts: posts
-      };
-    });
-
-    await browser.close();
+    const data = await getInstagramProfile(username);
     res.json(data);
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 app.listen(3000, () => {
-  console.log("Instagram Scraper v6 — DOM 2026 — Running on port 3000");
+  console.log("Instagram Private API — Running on port 3000");
 });
